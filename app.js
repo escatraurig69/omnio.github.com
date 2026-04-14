@@ -1,8 +1,13 @@
-// ==================== CONFIGURACIÓN SUPABASE ====================
-const SUPABASE_URL = 'https://ivxdxxkkorjtiwnxcdfn.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_RxwqP19sQPRdjmk7iTEZYQ_ZvL9cTSo';
+// ==================== EVITAR REDECLARACIÓN ====================
+if (typeof window.supabaseClient === 'undefined') {
+    // Configuración Supabase
+    const SUPABASE_URL = 'https://ivxdxxkkorjtiwnxcdfn.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_RxwqP19sQPRdjmk7iTEZYQ_ZvL9cTSo';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+const supabase = window.supabaseClient;
 let currentUser = null;
 let signaturePad = null;
 
@@ -10,7 +15,7 @@ let signaturePad = null;
 async function doLogin() {
     const username = document.getElementById('loginUser').value.trim();
     const password = document.getElementById('loginPass').value.trim();
-    const email = username + '@ejemplo.com'; // convertimos a email
+    const email = username + '@ejemplo.com';
     try {
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
@@ -18,7 +23,6 @@ async function doLogin() {
         });
         if (error) throw error;
 
-        // Obtener rol desde la tabla user_profiles
         const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('role')
@@ -191,7 +195,7 @@ async function showOrderDetailPdf(orderId) {
     const modal = document.getElementById('pdfDetailModal');
     const content = document.getElementById('pdfContent');
     const productosHtml = order.products && order.products.length ?
-        `<table class="w-full border-collapse text-xs"><thead><tr class="border-b"><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${order.products.map(p => `<tr><td>${escapeHtml(p.name)}</td><td>${p.quantity}</td><td>$${p.unit_price.toFixed(2)}</td><td>$${(p.quantity * p.unit_price).toFixed(2)}</td></tr>`).join('')}</tbody></table>`
+        `<table class="w-full border-collapse text-xs"><thead><tr class="border-b"><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${order.products.map(p => `<tr><td class="px-1">${escapeHtml(p.name)}</td><td class="px-1">${p.quantity}</td><td class="px-1">$${p.unit_price.toFixed(2)}</td><td class="px-1">$${(p.quantity * p.unit_price).toFixed(2)}</td></tr>`).join('')}</tbody></table>`
         : '<p>No hay productos</p>';
     content.innerHTML = `<div class="border-b pb-3 mb-3"><h2 class="text-xl font-bold">ORDEN DE SERVICIO</h2><p>N° ${order.order_number} | ${new Date(order.created_at).toLocaleString()}</p></div>
     <div class="grid grid-cols-2 gap-3"><div><b>Cliente:</b> ${escapeHtml(order.clients?.name)}<br><b>DNI:</b> ${order.clients?.dni}<br><b>Tel:</b> ${order.clients?.phone}<br><b>Ubicación:</b> ${escapeHtml(order.clients?.location)}</div><div><b>Técnicos:</b> ${order.workers?.join(', ')}<br><b>Inicio:</b> ${new Date(order.start_datetime).toLocaleString()}<br><b>Término:</b> ${new Date(order.end_datetime).toLocaleString()}</div></div>
