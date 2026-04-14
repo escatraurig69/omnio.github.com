@@ -1,7 +1,7 @@
 // ==================== EVITAR REDECLARACIÓN DE SUPABASE ====================//
 if (!window.supabaseClient) {
     const SUPABASE_URL = 'https://ivxdxxkkorjtiwnxcdfn.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_RxwqP19sQPRdjmk7iTEZYQ_ZvL9cTSo';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2eGR4eGtrb3JqdGl3bnhjZGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMTMyMTEsImV4cCI6MjA5MTY4OTIxMX0.B-nktdSeyVmvzE2Vp5VGvsaaHS2AGe1etJhIkY2nPhs';
     window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 const supabase = window.supabaseClient;
