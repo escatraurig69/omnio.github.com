@@ -1,12 +1,9 @@
-// ==================== EVITAR REDECLARACIÓN ====================
-if (typeof window.supabaseClient === 'undefined') {
-    // Configuración Supabase
+// ==================== EVITAR REDECLARACIÓN DE SUPABASE ====================
+if (!window.supabaseClient) {
     const SUPABASE_URL = 'https://ivxdxxkkorjtiwnxcdfn.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_RxwqP19sQPRdjmk7iTEZYQ_ZvL9cTSo';
-
     window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
-
 const supabase = window.supabaseClient;
 let currentUser = null;
 let signaturePad = null;
