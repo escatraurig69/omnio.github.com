@@ -1,35 +1,45 @@
 // ==================== CONFIGURACIÓN SUPABASE ====================
 const SUPABASE_URL = 'https://ivxdxxkkorjtiwnxcdfn.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_RxwqP19sQPRdjmk7iTEZYQ_ZvL9cTSo'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_RxwqP19sQPRdjmk7iTEZYQ_ZvL9cTSo';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let signaturePad = null;
 
-// ==================== LOGIN (usando tabla 'users') ====================
+// ==================== LOGIN con email/contraseña (Supabase Auth) ====================
 async function doLogin() {
     const username = document.getElementById('loginUser').value.trim();
     const password = document.getElementById('loginPass').value.trim();
+    const email = username + '@ejemplo.com'; // convertimos a email
     try {
-        // Buscar usuario por nombre
-        const { data, error } = await supabase
-            .from('users')
-            .select('username, role, password_hash')
-            .eq('username', username)
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        if (error) throw error;
+
+        // Obtener rol desde la tabla user_profiles
+        const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .eq('email', email)
             .single();
-        if (error || !data) throw new Error('Usuario no existe');
-        // Comparación simple (solo demo - en producción usar bcrypt o auth de Supabase)
-        if (password !== '1234') throw new Error('Contraseña incorrecta');
-        currentUser = { username: data.username, role: data.role };
+        if (profileError && profileError.code !== 'PGRST116') throw profileError;
+
+        currentUser = {
+            username: username,
+            email: email,
+            role: profile?.role || 'employee'
+        };
         sessionStorage.setItem('servitec_session', JSON.stringify(currentUser));
         document.getElementById('loginContainer').classList.add('hidden');
         document.getElementById('appContainer').classList.remove('hidden');
-        document.getElementById('userBadge').innerHTML = `<i class="fas fa-user"></i> ${currentUser.username}`;
+        document.getElementById('userBadge').innerHTML = `<i class="fas fa-user"></i> ${currentUser.username} (${currentUser.role})`;
         await loadInitialData();
     } catch (err) {
         document.getElementById('loginError').innerText = err.message;
         document.getElementById('loginError').classList.remove('hidden');
-        setTimeout(() => document.getElementById('loginError').classList.add('hidden'), 2000);
+        setTimeout(() => document.getElementById('loginError').classList.add('hidden'), 3000);
     }
 }
 
@@ -39,7 +49,6 @@ async function getAllOrders() {
         .from('service_orders')
         .select('*, clients(*)');
     if (error) return [];
-    // Cargar workers y productos para cada orden
     for (let order of data) {
         const { data: workersData } = await supabase
             .from('order_workers')
@@ -56,7 +65,6 @@ async function getAllOrders() {
 }
 
 async function saveOrder(orderData) {
-    // 1. Insertar orden
     const { data: order, error } = await supabase
         .from('service_orders')
         .insert([{
@@ -76,7 +84,6 @@ async function saveOrder(orderData) {
     if (error) throw error;
     const orderId = order.id;
 
-    // 2. Insertar trabajadores
     for (let workerName of orderData.workers) {
         const { data: worker } = await supabase
             .from('workers')
@@ -90,7 +97,6 @@ async function saveOrder(orderData) {
         }
     }
 
-    // 3. Insertar productos
     for (let prod of orderData.products) {
         await supabase
             .from('order_products')
@@ -139,7 +145,7 @@ async function deleteWorker(name) {
     await supabase.from('workers').delete().eq('name', name);
 }
 
-// ==================== RENDERIZADO DE ÓRDENES (igual que antes, pero usando las funciones nuevas) ====================
+// ==================== RENDERIZADO DE ÓRDENES ====================
 async function renderOrders() {
     let orders = await getAllOrders();
     const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
@@ -197,7 +203,7 @@ async function showOrderDetailPdf(orderId) {
     document.getElementById('closePdfModal').onclick = () => modal.classList.add('hidden');
 }
 
-// ==================== PERFIL DE TRABAJADOR (similar, usando getAllOrders) ====================
+// ==================== PERFIL DE TRABAJADOR ====================
 async function showWorkerProfile(workerName) {
     const allOrders = await getAllOrders();
     let workerOrders = allOrders.filter(o => o.workers && o.workers.includes(workerName));
@@ -236,7 +242,7 @@ async function showWorkerProfile(workerName) {
     document.getElementById('workerProfileModal').classList.remove('hidden');
 }
 
-// ==================== GESTIÓN DE TÉCNICOS Y CLIENTES (adaptadas) ====================
+// ==================== GESTIÓN DE TÉCNICOS Y CLIENTES ====================
 async function openWorkersLibrary() {
     const modal = document.getElementById('workersModalLib');
     const listDiv = document.getElementById('workersListModal');
@@ -256,7 +262,7 @@ async function openClientsLibrary() {
     modal.classList.remove('hidden');
 }
 
-// ==================== FORMULARIO NUEVA ORDEN (casi igual, solo cambia el guardado) ====================
+// ==================== FORMULARIO NUEVA ORDEN ====================
 async function loadFormData() {
     const clients = await getAllClients();
     const select = document.getElementById('clientSelect');
@@ -404,7 +410,7 @@ if (savedSession) {
     currentUser = JSON.parse(savedSession);
     document.getElementById('loginContainer').classList.add('hidden');
     document.getElementById('appContainer').classList.remove('hidden');
-    document.getElementById('userBadge').innerHTML = `<i class="fas fa-user"></i> ${currentUser.username}`;
+    document.getElementById('userBadge').innerHTML = `<i class="fas fa-user"></i> ${currentUser.username} (${currentUser.role})`;
     (async () => {
         const canvasElem = document.getElementById('signatureCanvas');
         signaturePad = new SignaturePad(canvasElem, { backgroundColor: 'white' });
